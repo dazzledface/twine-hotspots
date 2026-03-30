@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clickable Image Hotspots in Twine (Harlowe) — COMP 380</title>
+<style>
+
+/* ── Google Fonts ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+/* ── Design tokens ────────────────────────────────────────────────────────── */
+:root {
+  --bg:         #F7F6F2;
+  --surface:    #FFFFFF;
+  --dark:       #0F1923;
+  --navy:       #1A2B3C;
+  --teal:       #0D9488;
+  --teal-lt:    #14B8A6;
+  --teal-bg:    #F0FDFA;
+  --teal-rule:  #99F6E4;
+  --amber:      #92400E;
+  --amber-bg:   #FFFBEB;
+  --amber-rule: #FCD34D;
+  --mid:        #374151;
+  --sub:        #6B7280;
+  --rule:       #E5E7EB;
+  --code-bg:    #0F1923;
+  --code-fg:    #E2E8F0;
+  --code-teal:  #5EEAD4;
+  --code-amber: #FCD34D;
+  --code-dim:   #64748B;
+  --step-bg:    #EFF6FF;
+  --step-num:   #1D4ED8;
+}
+
+/* ── Reset & base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--mid);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Layout ───────────────────────────────────────────────────────────────── */
+.page-wrap {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+/* ── Sidebar ──────────────────────────────────────────────────────────────── */
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--dark);
+  padding: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.sidebar-brand {
+  padding: 0 1.5rem 1.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 1rem;
+}
+
+.sidebar-brand .course {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--teal-lt);
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.sidebar-brand .title {
+  font-family: 'Lora', serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #F1F5F9;
+  line-height: 1.4;
+}
+
+.nav-section {
+  padding: 0.4rem 0;
+}
+
+.nav-section-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  padding: 0.6rem 1.5rem 0.2rem;
+}
+
+.nav-link {
+  display: block;
+  padding: 0.4rem 1.5rem;
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.55);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: all 0.15s;
+}
+
+.nav-link:hover {
+  color: #F1F5F9;
+  background: rgba(255,255,255,0.05);
+  border-left-color: var(--teal);
+}
+
+.nav-link.active {
+  color: var(--teal-lt);
+  border-left-color: var(--teal);
+  background: rgba(13,148,136,0.1);
+}
+
+.nav-link.step-link {
+  padding-left: 2.25rem;
+  font-size: 12px;
+}
+
+/* ── Main content ─────────────────────────────────────────────────────────── */
+main {
+  min-width: 0;
+  padding: 3rem 3.5rem 5rem;
+  max-width: 860px;
+}
+
+/* ── Page header ──────────────────────────────────────────────────────────── */
+.page-header {
+  margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.page-header .eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--teal);
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.page-header h1 {
+  font-family: 'Lora', serif;
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--dark);
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+}
+
+.page-header .subtitle {
+  font-size: 1.05rem;
+  font-weight: 300;
+  color: var(--sub);
+  font-style: italic;
+  font-family: 'Lora', serif;
+}
+
+/* ── Section ──────────────────────────────────────────────────────────────── */
+.section {
+  margin-bottom: 4rem;
+}
+
+.part-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.part-badge {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--teal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.part-header h2 {
+  font-family: 'Lora', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--dark);
+  border-bottom: none;
+}
+
+h3 {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--teal);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 2rem 0 0.75rem;
+}
+
+p {
+  margin-bottom: 0.9rem;
+  font-size: 15.5px;
+  line-height: 1.75;
+}
+
+p:last-child { margin-bottom: 0; }
+
+/* ── Intro text ───────────────────────────────────────────────────────────── */
+.intro {
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--mid);
+  margin-bottom: 1.5rem;
+}
+
+/* ── Overview boxes ───────────────────────────────────────────────────────── */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.overview-card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--teal);
+  border-radius: 0 0 6px 6px;
+  padding: 1.1rem 1.2rem;
+}
+
+.overview-card .card-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--teal);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+
+.overview-card .card-title {
+  font-weight: 600;
+  color: var(--dark);
+  font-size: 14px;
+  margin-bottom: 0.35rem;
+}
+
+.overview-card .card-desc {
+  font-size: 13px;
+  color: var(--sub);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Steps ────────────────────────────────────────────────────────────────── */
+.steps {
+  list-style: none;
+  counter-reset: steps;
+  margin: 1.25rem 0;
+}
+
+.steps li {
+  counter-increment: steps;
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+  align-items: start;
+}
+
+.steps li::before {
+  content: counter(steps);
+  width: 2rem;
+  height: 2rem;
+  background: var(--step-bg);
+  border: 1.5px solid #BFDBFE;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--step-num);
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.steps li p {
+  margin: 0;
+  padding-top: 0.2rem;
+}
+
+/* ── Sub-bullets ──────────────────────────────────────────────────────────── */
+.subbullets {
+  list-style: none;
+  margin: 0.5rem 0 0.75rem 2.75rem;
+}
+
+.subbullets li {
+  position: relative;
+  padding-left: 1.1rem;
+  margin-bottom: 0.4rem;
+  font-size: 14.5px;
+  color: var(--mid);
+  line-height: 1.6;
+}
+
+.subbullets li::before {
+  content: "–";
+  position: absolute;
+  left: 0;
+  color: var(--teal);
+  font-weight: 600;
+}
+
+/* ── Code blocks ──────────────────────────────────────────────────────────── */
+pre {
+  background: var(--code-bg);
+  border-radius: 6px;
+  border-left: 3px solid var(--teal);
+  padding: 1.2rem 1.4rem;
+  margin: 1rem 0 1.2rem;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--code-fg);
+  min-width: 400px;
+}
+
+pre .comment { color: var(--code-dim); font-style: italic; }
+pre .key     { color: var(--code-teal); }
+pre .val     { color: var(--code-amber); }
+pre .tag     { color: #93C5FD; }
+pre .attr    { color: #FCA5A5; }
+pre .string  { color: var(--code-amber); }
+pre .fn      { color: #C4B5FD; }
+
+/* Inline code */
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  background: #EEF2F7;
+  color: var(--teal);
+  padding: 0.1em 0.4em;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  border-radius: 0;
+}
+
+/* ── Callouts ─────────────────────────────────────────────────────────────── */
+.callout {
+  border-radius: 0 6px 6px 0;
+  padding: 1.1rem 1.3rem;
+  margin: 1.25rem 0;
+  border-left: 4px solid;
+}
+
+.callout.tip {
+  background: var(--teal-bg);
+  border-color: var(--teal);
+}
+
+.callout.warning {
+  background: var(--amber-bg);
+  border-color: #D97706;
+}
+
+.callout-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.callout.tip .callout-label    { color: var(--teal); }
+.callout.warning .callout-label { color: var(--amber); }
+
+.callout p {
+  font-size: 14.5px;
+  margin-bottom: 0.5rem;
+  line-height: 1.65;
+}
+
+.callout p:last-child { margin-bottom: 0; }
+.callout.tip p     { color: #0F766E; }
+.callout.warning p { color: var(--amber); }
+
+/* ── Claude prompt box ────────────────────────────────────────────────────── */
+.prompt-box {
+  background: var(--teal-bg);
+  border: 1px solid var(--teal-rule);
+  border-top: 4px solid var(--teal);
+  border-radius: 0 0 6px 6px;
+  padding: 1.4rem 1.5rem;
+  margin: 1.25rem 0;
+}
+
+.prompt-box .prompt-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 0.75rem;
+}
+
+.prompt-box .prompt-text {
+  font-family: 'Lora', serif;
+  font-size: 14.5px;
+  font-style: italic;
+  color: #0F766E;
+  line-height: 1.75;
+  margin-bottom: 0.75rem;
+}
+
+.prompt-box .prompt-text code {
+  background: rgba(13,148,136,0.12);
+  color: var(--teal);
+  font-style: normal;
+}
+
+.prompt-box .prompt-note {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--teal);
+  margin: 0;
+}
+
+/* ── Formula table ────────────────────────────────────────────────────────── */
+.formula-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  font-size: 14px;
+}
+
+.formula-table th {
+  background: var(--dark);
+  color: white;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.65rem 1rem;
+  text-align: left;
+}
+
+.formula-table td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.formula-table tr:last-child td { border-bottom: none; }
+
+.formula-table td:first-child {
+  font-weight: 600;
+  color: var(--dark);
+  background: #F8FAFC;
+  width: 20%;
+  white-space: nowrap;
+}
+
+.formula-table td:not(:first-child) {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  color: var(--mid);
+  background: white;
+}
+
+/* ── Annotation table ─────────────────────────────────────────────────────── */
+.annotation-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  font-size: 14px;
+}
+
+.annotation-table th {
+  background: var(--dark);
+  color: white;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.65rem 1rem;
+  text-align: left;
+}
+
+.annotation-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+  line-height: 1.55;
+}
+
+.annotation-table tr:last-child td { border-bottom: none; }
+
+.annotation-table td:first-child {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--teal);
+  background: #F8FAFC;
+  width: 35%;
+  word-break: break-all;
+}
+
+.annotation-table td:last-child {
+  color: var(--mid);
+  background: white;
+}
+
+/* ── Troubleshoot table ───────────────────────────────────────────────────── */
+.trouble-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  font-size: 14px;
+}
+
+.trouble-table th {
+  background: var(--dark);
+  color: white;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.65rem 1rem;
+  text-align: left;
+}
+
+.trouble-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+  line-height: 1.6;
+}
+
+.trouble-table tr:last-child td { border-bottom: none; }
+
+.trouble-table td:first-child {
+  font-weight: 600;
+  color: var(--dark);
+  background: #F8FAFC;
+  width: 38%;
+}
+
+.trouble-table td:last-child {
+  background: white;
+  color: var(--mid);
+}
+
+/* ── Checklist ────────────────────────────────────────────────────────────── */
+.checklist {
+  list-style: none;
+  margin: 1rem 0;
+}
+
+.checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 14.5px;
+  color: var(--mid);
+  line-height: 1.5;
+}
+
+.checklist li:last-child { border-bottom: none; }
+
+.checklist li::before {
+  content: "";
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid #D1D5DB;
+  border-radius: 3px;
+  margin-top: 0.15rem;
+  background: white;
+}
+
+/* ── Divider ──────────────────────────────────────────────────────────────── */
+.section-divider {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: 3rem 0;
+}
+
+/* ── Skip link / accessibility ────────────────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--teal);
+  color: white;
+  padding: 8px;
+  z-index: 100;
+  text-decoration: none;
+  font-size: 14px;
+}
+.skip-link:focus { top: 0; }
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .page-wrap { grid-template-columns: 1fr; }
+  .sidebar {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 1rem 1.5rem;
+    gap: 0.25rem;
+  }
+  .sidebar-brand { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+  .nav-section { display: none; }
+  main { padding: 2rem 1.5rem 4rem; }
+  .overview-grid { grid-template-columns: 1fr; }
+}
+
+@media print {
+  .sidebar { display: none; }
+  .page-wrap { display: block; }
+  main { padding: 0; max-width: 100%; }
+}
+
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<div class="page-wrap">
+
+  <!-- ── Sidebar nav ────────────────────────────────────────────────────── -->
+  <nav class="sidebar" aria-label="Guide navigation">
+    <div class="sidebar-brand">
+      <span class="course">COMP 380 · Harlowe</span>
+      <span class="title">Clickable Image Hotspots</span>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Overview</div>
+      <a href="#overview" class="nav-link">How it works</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Part 1 — Image</div>
+      <a href="#step1" class="nav-link step-link">Step 1 · Natural dimensions</a>
+      <a href="#step2" class="nav-link step-link">Step 2 · Display size</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Part 2 — Mapping</div>
+      <a href="#step3" class="nav-link step-link">Step 3 · Draw regions</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Part 3 — Percentages</div>
+      <a href="#formulas" class="nav-link step-link">Formulas</a>
+      <a href="#claude-prompt" class="nav-link step-link">Ask Claude</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Part 4 — Twine Setup</div>
+      <a href="#step4" class="nav-link step-link">Step 4 · Story JavaScript</a>
+      <a href="#step5" class="nav-link step-link">Step 5 · Target passages</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Part 5 — Code</div>
+      <a href="#step6" class="nav-link step-link">Step 6 · Passage template</a>
+      <a href="#annotations" class="nav-link step-link">Code annotations</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Part 6 — Testing</div>
+      <a href="#step7" class="nav-link step-link">Step 7 · Debug tint</a>
+      <a href="#step8" class="nav-link step-link">Step 8 · Go live</a>
+      <a href="#step9" class="nav-link step-link">Step 9 · Publish</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Reference</div>
+      <a href="#checklist" class="nav-link step-link">Checklist</a>
+      <a href="#troubleshooting" class="nav-link step-link">Troubleshooting</a>
+    </div>
+  </nav>
+
+  <!-- ── Main content ───────────────────────────────────────────────────── -->
+  <main id="main">
+
+    <!-- Page header -->
+    <header class="page-header">
+      <span class="eyebrow">COMP 380 · Technology, Ethics &amp; Culture · Harlowe</span>
+      <h1>Clickable Image Hotspots in Twine</h1>
+      <p class="subtitle">A step-by-step guide to making regions of an image navigable to different passages</p>
+    </header>
+
+    <p class="intro">This guide walks you through creating clickable areas — called <strong>hotspots</strong> — on an image in a Harlowe Twine story. Clicking a hotspot takes the player to a different passage, just like a regular link. The technique is more involved than adding a simple text link, but it works reliably across screen sizes and is well suited to interactive maps, room illustrations, character portraits, and other forms of visual navigation.</p>
+
+    <!-- ── OVERVIEW ──────────────────────────────────────────────────────── -->
+    <section class="section" id="overview">
+      <div class="part-header">
+        <div class="part-badge">→</div>
+        <h2>How it works — the big picture</h2>
+      </div>
+
+      <p>The approach has three main pieces that work together:</p>
+
+      <div class="overview-grid">
+        <div class="overview-card">
+          <div class="card-num">Piece 1</div>
+          <div class="card-title">A positioned container</div>
+          <p class="card-desc">Your image sits inside a <code>div</code> with <code>position: relative</code>. This is the anchor that all overlay positions are measured from.</p>
+        </div>
+        <div class="overview-card">
+          <div class="card-num">Piece 2</div>
+          <div class="card-title">Invisible overlay divs</div>
+          <p class="card-desc">Transparent <code>div</code> elements are placed on top of the image using JavaScript. Each one covers one hotspot region. Their positions are in percentages, so they scale with the image.</p>
+        </div>
+        <div class="overview-card">
+          <div class="card-num">Piece 3</div>
+          <div class="card-title">Click navigation</div>
+          <p class="card-desc">A click event listener on each overlay div calls Harlowe's internal navigation function to move the player to the target passage.</p>
+        </div>
+      </div>
+
+      <div class="callout warning">
+        <div class="callout-label">⚠️ Important</div>
+        <p>Harlowe strips <code>style=</code> attributes from HTML elements placed directly in passages, so you cannot use inline styles on divs. This guide uses JavaScript to create and style the overlay divs instead — bypassing the restriction entirely.</p>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ── PART 1 ─────────────────────────────────────────────────────────── -->
+    <section class="section">
+      <div class="part-header">
+        <div class="part-badge">1</div>
+        <h2>Prepare Your Image</h2>
+      </div>
+
+      <!-- Step 1 -->
+      <h3 id="step1">Step 1 — Find your image's natural dimensions</h3>
+      <p>Before you do anything else, you need to know the exact pixel width and height of your image at its original (natural) size. Everything else — the hotspot coordinates and the percentage calculations — depends on this number.</p>
+
+      <ol class="steps">
+        <li><p>Open the image URL directly in a browser tab.</p></li>
+        <li><p>Most browsers display the dimensions in the tab title — for example: <code>forest.jpg (5686 × 3726)</code>.</p></li>
+        <li><p>Alternatively, right-click the image on any page → <strong>Open image in new tab</strong>, then read the dimensions from the tab title.</p></li>
+        <li><p>Write down the width and height. You will need them throughout this guide.</p></li>
+      </ol>
+
+      <div class="callout tip">
+        <div class="callout-label">💡 Tip</div>
+        <p>If your image is hosted on Flickr, the dimensions shown in the tab title when you open the direct image URL are the natural dimensions of that specific file. Use those numbers exactly.</p>
+      </div>
+
+      <!-- Step 2 -->
+      <h3 id="step2">Step 2 — Decide on a display width</h3>
+      <p>You will display the image at a fixed maximum width in your story. Choose a width that fits comfortably in the Twine passage — somewhere between 500px and 800px works well for most screens. You also need the corresponding display height.</p>
+
+      <p>To calculate the display height that preserves the aspect ratio:</p>
+
+<pre><code><span class="comment">/* Formula */</span>
+display height = display width × (natural height ÷ natural width)
+
+<span class="comment">/* Example: natural size is 5686 × 3726, display width = 2000 */</span>
+display height = 2000 × (3726 ÷ 5686) = <span class="val">1311</span></code></pre>
+
+      <p>Write down your chosen display width and calculated display height.</p>
+
+      <div class="callout tip">
+        <div class="callout-label">💡 Tip</div>
+        <p>You can ask Claude to do this calculation. Tell it your natural dimensions and your chosen display width and ask it to calculate the display height.</p>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ── PART 2 ─────────────────────────────────────────────────────────── -->
+    <section class="section">
+      <div class="part-header">
+        <div class="part-badge">2</div>
+        <h2>Map Your Hotspot Regions</h2>
+      </div>
+
+      <h3 id="step3">Step 3 — Use maschek.hu to draw your regions</h3>
+      <p>You will use a free online tool to draw shapes over the parts of your image you want to be clickable. The tool generates pixel coordinates that you will convert to percentages in the next part.</p>
+
+      <ol class="steps">
+        <li><p>Go to <strong>maschek.hu/imagemap/imgmap</strong> in your browser.</p></li>
+        <li><p>Click <strong>Image URL</strong> and paste in the direct URL of your image, then click OK.</p></li>
+        <li><p>Your image will appear in the editor. Use the shape tools to draw regions:</p>
+          <ul class="subbullets">
+            <li><strong>Rectangle</strong> — click and drag to draw a box</li>
+            <li><strong>Circle</strong> — click the centre, drag out to set the radius</li>
+            <li><strong>Polygon</strong> — click to place points, double-click to close the shape</li>
+          </ul>
+        </li>
+        <li><p>Draw one shape for each hotspot you want. You do not need to fill in the <strong>href</strong> or <strong>alt</strong> fields.</p></li>
+        <li><p>When all regions are drawn, scroll down to find the generated code. It will look something like this:</p>
+
+<pre><code><span class="tag">&lt;img</span> <span class="attr">src</span>=<span class="string">"..."</span> <span class="attr">usemap</span>=<span class="string">"#imgmap123"</span><span class="tag">&gt;</span>
+<span class="tag">&lt;map</span> <span class="attr">name</span>=<span class="string">"imgmap123"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;area</span> <span class="attr">shape</span>=<span class="string">"circle"</span> <span class="attr">coords</span>=<span class="string">"895,971,587"</span>       <span class="attr">href</span>=<span class="string">""</span> <span class="tag">/&gt;</span>
+  <span class="tag">&lt;area</span> <span class="attr">shape</span>=<span class="string">"rect"</span>   <span class="attr">coords</span>=<span class="string">"1536,380,3080,3012"</span>  <span class="attr">href</span>=<span class="string">""</span> <span class="tag">/&gt;</span>
+  <span class="tag">&lt;area</span> <span class="attr">shape</span>=<span class="string">"rect"</span>   <span class="attr">coords</span>=<span class="string">"3128,712,3616,1412"</span>  <span class="attr">href</span>=<span class="string">""</span> <span class="tag">/&gt;</span>
+<span class="tag">&lt;/map&gt;</span></code></pre>
+        </li>
+        <li><p>Copy this code and paste it somewhere you can refer to it — a text file or a note.</p></li>
+      </ol>
+
+      <div class="callout warning">
+        <div class="callout-label">⚠️ Important</div>
+        <p>Maschek.hu maps at the image's natural size. If your image is very large (e.g. 5686px wide), the coordinates will be large numbers. That is fine — you will convert them to percentages in the next step.</p>
+        <p>Watch out for tiny accidental shapes — for example <code>coords="1544,360,1568,364"</code> is a rectangle only 24×4 pixels. These are usually stray clicks from the drawing tool. Delete them before continuing.</p>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ── PART 3 ─────────────────────────────────────────────────────────── -->
+    <section class="section">
+      <div class="part-header">
+        <div class="part-badge">3</div>
+        <h2>Convert Coordinates to Percentages</h2>
+      </div>
+
+      <p>The overlay divs use percentage-based positioning so they scale correctly when the image resizes. You need to convert your pixel coordinates into percentages of the image's natural dimensions.</p>
+
+      <!-- Formulas -->
+      <h3 id="formulas">The formulas</h3>
+      <p>For each hotspot region you will calculate four values — <code>left</code>, <code>top</code>, <code>width</code>, and <code>height</code> — all as percentages of the image's natural dimensions.</p>
+
+      <table class="formula-table">
+        <thead>
+          <tr>
+            <th>Value</th>
+            <th>Rectangle — coords are x1,y1,x2,y2</th>
+            <th>Circle — coords are cx,cy,radius</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>left %</td>
+            <td>x1 ÷ natural width × 100</td>
+            <td>(cx − r) ÷ natural width × 100</td>
+          </tr>
+          <tr>
+            <td>top %</td>
+            <td>y1 ÷ natural height × 100</td>
+            <td>(cy − r) ÷ natural height × 100</td>
+          </tr>
+          <tr>
+            <td>width %</td>
+            <td>(x2 − x1) ÷ natural width × 100</td>
+            <td>(r × 2) ÷ natural width × 100</td>
+          </tr>
+          <tr>
+            <td>height %</td>
+            <td>(y2 − y1) ÷ natural height × 100</td>
+            <td>(r × 2) ÷ natural height × 100</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Claude prompt -->
+      <h3 id="claude-prompt">Let Claude do the calculations</h3>
+      <p>Rather than calculating by hand, you can ask Claude to generate all the percentage values for you. Use the prompt template below — fill in your own numbers and paste your <code>&lt;map&gt;</code> code where indicated.</p>
+
+      <div class="prompt-box">
+        <div class="prompt-label">📋 Prompt template for Claude</div>
+        <p class="prompt-text">
+          I have an image with natural dimensions <code>[WIDTH] × [HEIGHT]</code> pixels. I am resizing it to <code>[DISPLAY WIDTH] × [DISPLAY HEIGHT]</code> for display in Twine. I mapped hotspot regions using maschek.hu and got these coordinates:
+        </p>
+        <p class="prompt-text">
+          <code>[PASTE YOUR FULL &lt;map&gt; CODE HERE]</code>
+        </p>
+        <p class="prompt-text">
+          Please calculate the left, top, width, and height as percentages for each area so I can use them as CSS overlay divs. Show me the working for each one, flag any tiny or overlapping regions, and give me the final values ready to copy into the JavaScript array.
+        </p>
+        <p class="prompt-note">Replace the bracketed parts with your actual numbers and paste your &lt;map&gt; code in full.</p>
+      </div>
+
+      <div class="callout tip">
+        <div class="callout-label">💡 Tip</div>
+        <p>Claude will show the working step by step, check for tiny accidental regions, flag overlapping shapes, and give you the percentage values formatted and ready to paste into the code template in Part 5.</p>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ── PART 4 ─────────────────────────────────────────────────────────── -->
+    <section class="section">
+      <div class="part-header">
+        <div class="part-badge">4</div>
+        <h2>Set Up Twine</h2>
+      </div>
+
+      <h3 id="step4">Step 4 — Add the navigation code to Story JavaScript</h3>
+      <p>Harlowe's passage navigation function is not directly accessible from a passage script tag. You need to capture a reference to it once at startup and store it in a global variable your passage code can reach.</p>
+
+      <ol class="steps">
+        <li><p>In Twine, open your story.</p></li>
+        <li><p>Click the story name in the bottom toolbar, then choose <strong>Edit Story JavaScript</strong>.</p></li>
+        <li><p>Paste in exactly this code:</p>
+
+<pre><code>window.harlowe = window.harlowe || {};
+window.harlowe.Engine = Engine;</code></pre>
+        </li>
+        <li><p>Close the JavaScript editor and save.</p></li>
+      </ol>
+
+      <p>This runs once when the story loads and saves a reference to Harlowe's Engine module where your passage scripts can use it.</p>
+
+      <div class="callout warning">
+        <div class="callout-label">⚠️ Important</div>
+        <p>This relies on an undocumented internal Harlowe feature. It has been stable across all versions of Harlowe 3, but it could theoretically change in a future update. Keep your original coordinate data so you can rebuild the code if needed.</p>
+      </div>
+
+      <h3 id="step5">Step 5 — Create your target passages</h3>
+      <p>Before writing the hotspot passage, create the passages each hotspot will navigate to. Give each one a clear, unique name — you will need to type these names exactly in the code.</p>
+
+      <div class="callout tip">
+        <div class="callout-label">💡 Tip</div>
+        <p>Short, simple passage names reduce the chance of typos. <code>Forest</code>, <code>Kitchen</code>, and <code>Bedroom</code> are easier to get right than <code>The Dark Forest Path</code> or <code>Room 2 - Kitchen Area</code>.</p>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ── PART 5 ─────────────────────────────────────────────────────────── -->
+    <section class="section">
+      <div class="part-header">
+        <div class="part-badge">5</div>
+        <h2>Write the Passage Code</h2>
+      </div>
+
+      <h3 id="step6">Step 6 — The full passage template</h3>
+      <p>Create the passage that will display your image with hotspots. Replace all placeholder values with your own image URL, display width, percentage values, and passage names.</p>
+
+<pre><code><span class="tag">&lt;div</span> <span class="attr">id</span>=<span class="string">"hotspot-container"</span>
+     <span class="attr">style</span>=<span class="string">"position:relative; display:inline-block; width:100%; max-width:2000px;"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;img</span> <span class="attr">src</span>=<span class="string">"YOUR-IMAGE-URL-HERE"</span>
+       <span class="attr">alt</span>=<span class="string">"description of your image"</span>
+       <span class="attr">style</span>=<span class="string">"width:100%; display:block;"</span><span class="tag">&gt;</span>
+<span class="tag">&lt;/div&gt;</span>
+
+<span class="tag">&lt;script&gt;</span>
+<span class="fn">(function()</span> {
+  var container = document.<span class="fn">getElementById</span>(<span class="string">"hotspot-container"</span>);
+
+  var hotspots = [
+    { left:<span class="val">"5.4%"</span>,  top:<span class="val">"10.3%"</span>, width:<span class="val">"20.7%"</span>, height:<span class="val">"31.6%"</span>,
+      circle:<span class="val">true</span>,  passage:<span class="string">"Passage One"</span>   },
+    { left:<span class="val">"27.0%"</span>, top:<span class="val">"10.2%"</span>, width:<span class="val">"27.2%"</span>, height:<span class="val">"70.6%"</span>,
+      circle:<span class="val">false</span>, passage:<span class="string">"Passage Two"</span>   },
+    { left:<span class="val">"55.0%"</span>, top:<span class="val">"19.1%"</span>, width:<span class="val">"8.6%"</span>,  height:<span class="val">"18.8%"</span>,
+      circle:<span class="val">false</span>, passage:<span class="string">"Passage Three"</span> },
+  ];
+
+  hotspots.<span class="fn">forEach</span>(function(h) {
+    var div = document.<span class="fn">createElement</span>(<span class="string">"div"</span>);
+    div.style.position   = <span class="string">"absolute"</span>;
+    div.style.left       = h.left;
+    div.style.top        = h.top;
+    div.style.width      = h.width;
+    div.style.height     = h.height;
+    div.style.cursor     = <span class="string">"pointer"</span>;
+    div.style.background = <span class="val">"rgba(255,0,0,0.3)"</span>; <span class="comment">/* DEBUG — remove when done */</span>
+    if (h.circle) div.style.borderRadius = <span class="string">"50%"</span>;
+
+    div.<span class="fn">addEventListener</span>(<span class="string">"click"</span>, function() {
+      window.harlowe.Engine.<span class="fn">goToPassage</span>(h.passage);
+    });
+
+    container.<span class="fn">appendChild</span>(div);
+  });
+})();
+<span class="tag">&lt;/script&gt;</span></code></pre>
+
+      <!-- Annotations -->
+      <h3 id="annotations">What each part does</h3>
+
+      <table class="annotation-table">
+        <thead>
+          <tr>
+            <th>Line / section</th>
+            <th>What it does</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>&lt;div id="hotspot-container"&gt;</td>
+            <td>Creates the container the image and overlays sit inside. <code>position:relative</code> is essential — it makes the overlay positions relative to this container, not the whole page.</td>
+          </tr>
+          <tr>
+            <td>max-width:2000px</td>
+            <td>Limits how wide the image can grow. Change this number to match your chosen display width.</td>
+          </tr>
+          <tr>
+            <td>&lt;img style="width:100%"&gt;</td>
+            <td>Makes the image fill its container. Combined with <code>max-width</code> on the container, this gives a responsive image at a controlled maximum size.</td>
+          </tr>
+          <tr>
+            <td>var hotspots = [...]</td>
+            <td>An array — one object per hotspot. Each object contains the four percentage positions, whether it is circular, and the exact name of the passage to navigate to.</td>
+          </tr>
+          <tr>
+            <td>rgba(255,0,0,0.3)</td>
+            <td>Red debug tint so you can see where each hotspot sits while building. Change to <code>rgba(0,0,0,0)</code> when you are happy with the placement.</td>
+          </tr>
+          <tr>
+            <td>if (h.circle) borderRadius:"50%"</td>
+            <td>Makes the visible debug overlay round for circle hotspots. Has no effect on the click area — which is always the full bounding rectangle — but helps you visualise placement.</td>
+          </tr>
+          <tr>
+            <td>window.harlowe.Engine.goToPassage()</td>
+            <td>Calls Harlowe's internal navigation function using the reference you saved in Story JavaScript. This is what actually moves the player to the new passage.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ── PART 6 ─────────────────────────────────────────────────────────── -->
+    <section class="section">
+      <div class="part-header">
+        <div class="part-badge">6</div>
+        <h2>Test and Finish</h2>
+      </div>
+
+      <h3 id="step7">Step 7 — Test with the debug tint on</h3>
+      <p>Before removing the red debug colour, verify that your hotspots are landing in the right places.</p>
+
+      <ol class="steps">
+        <li><p>Click <strong>Play</strong> or <strong>Test</strong> in Twine to run your story.</p></li>
+        <li><p>Navigate to your hotspot passage.</p></li>
+        <li><p>You should see red or pink-tinted regions on top of your image. Each one should cover the area you intended.</p></li>
+        <li><p>If a region is in the wrong place, the percentages need adjusting. Ask Claude to recalculate — give it the original coordinates and the corrected natural dimensions.</p></li>
+        <li><p>Click each hotspot to confirm it navigates to the correct passage.</p></li>
+      </ol>
+
+      <div class="callout warning">
+        <div class="callout-label">⚠️ The most common mistake</div>
+        <p>A passage name mismatch. The string inside <code>passage:"..."</code> in your JavaScript must match the passage name in Twine <strong>exactly</strong> — including capitalisation and spaces. If clicking a hotspot produces a Harlowe error, check the names first.</p>
+      </div>
+
+      <h3 id="step8">Step 8 — Remove the debug tint</h3>
+      <p>Once all hotspots are correctly placed and navigating, make them invisible. Find this line:</p>
+
+<pre><code>div.style.background = <span class="val">"rgba(255,0,0,0.3)"</span>; <span class="comment">/* DEBUG — remove when done */</span></code></pre>
+
+      <p>Change it to:</p>
+
+<pre><code>div.style.background = <span class="val">"rgba(0,0,0,0)"</span>;</code></pre>
+
+      <p>The hotspots are now invisible but still fully clickable. The cursor will change to a pointer when the player hovers over them, giving a subtle cue that the area is interactive.</p>
+
+      <h3 id="step9">Step 9 — Publish to File</h3>
+
+      <ol class="steps">
+        <li><p>In Twine, click your story name → <strong>Publish to File</strong>.</p></li>
+        <li><p>Save the <code>.html</code> file somewhere you can find it.</p></li>
+        <li><p>Open the exported file in a browser and test it there — not inside Twine's preview — to confirm everything works in the final published form.</p></li>
+        <li><p>If your image is a local file, keep it in the same folder as the <code>.html</code> file, or in an <code>images/</code> subfolder next to it.</p></li>
+      </ol>
+
+      <div class="callout tip">
+        <div class="callout-label">💡 Tip</div>
+        <p>If you are using a hosted image (Flickr, Unsplash, etc.), the exported <code>.html</code> file is fully self-contained and does not need any extra files alongside it.</p>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ── CHECKLIST ─────────────────────────────────────────────────────── -->
+    <section class="section">
+      <div class="part-header">
+        <div class="part-badge">✓</div>
+        <h2 id="checklist">Complete Checklist</h2>
+      </div>
+
+      <p>Use this list to make sure you have not missed anything.</p>
+
+      <ul class="checklist">
+        <li>Note the natural pixel dimensions of your image (width × height)</li>
+        <li>Decide on a display width and calculate the proportional display height</li>
+        <li>Use maschek.hu to draw hotspot regions and copy the generated <code>&lt;map&gt;</code> code</li>
+        <li>Delete any tiny accidental regions from the generated code</li>
+        <li>Ask Claude to calculate the percentage values for each region (use the prompt template above)</li>
+        <li>Add the two-line Engine capture code to Story JavaScript</li>
+        <li>Create all target passages in Twine with clear, unique names</li>
+        <li>Paste the passage template into your hotspot passage</li>
+        <li>Replace placeholder values: image URL, max-width, hotspot percentages, passage names</li>
+        <li>Test with the red debug tint — confirm positions and navigation</li>
+        <li>Change background to <code>rgba(0,0,0,0)</code> to hide the overlay divs</li>
+        <li>Publish to File and test in a browser</li>
+      </ul>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ── TROUBLESHOOTING ───────────────────────────────────────────────── -->
+    <section class="section">
+      <div class="part-header">
+        <div class="part-badge">?</div>
+        <h2 id="troubleshooting">Troubleshooting</h2>
+      </div>
+
+      <table class="trouble-table">
+        <thead>
+          <tr>
+            <th>Problem</th>
+            <th>Most likely cause and fix</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>No red boxes visible at all</td>
+            <td>The script tag is not running. Check that your passage is saved and that you are viewing it in Play or Test mode, not just the passage editor preview.</td>
+          </tr>
+          <tr>
+            <td>Red boxes appear in completely wrong positions</td>
+            <td>The natural dimensions you used for the calculation do not match the actual image. Re-check the original image size (open its URL directly in a browser tab) and ask Claude to recalculate with the correct numbers.</td>
+          </tr>
+          <tr>
+            <td>Clicking a hotspot gives a Harlowe error about <code>goToPassage</code></td>
+            <td>The Story JavaScript code was not saved, or was typed incorrectly. Re-open Story JavaScript and check that both lines are there exactly as written.</td>
+          </tr>
+          <tr>
+            <td>Clicking a hotspot gives a passage-not-found error</td>
+            <td>The passage name in your code does not exactly match the name in Twine. Check capitalisation, spaces, and punctuation in both places.</td>
+          </tr>
+          <tr>
+            <td>Hotspots are slightly misaligned after resizing the browser</td>
+            <td>This should not happen with the percentage approach. If it does, check that the container <code>div</code> has <code>display:inline-block</code> and the image has <code>width:100%</code>.</td>
+          </tr>
+          <tr>
+            <td>Image does not appear</td>
+            <td>The image URL may be broken or blocked. Try opening the URL directly in a browser. For local images, check that the file is in the same folder as the published <code>.html</code> file.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Footer -->
+    <footer style="margin-top:3rem; padding-top:1.5rem; border-top:1px solid var(--rule);">
+      <p style="font-size:12px; color:var(--sub); letter-spacing:0.04em;">COMP 380 · Technology, Ethics &amp; Culture · Harlowe Image Hotspots Guide</p>
+    </footer>
+
+  </main>
+</div>
+
+<!-- Active nav highlighting on scroll -->
+<script>
+(function() {
+  var sections = document.querySelectorAll('[id]');
+  var navLinks = document.querySelectorAll('.nav-link');
+
+  function onScroll() {
+    var scrollY = window.scrollY + 100;
+    var current = '';
+    sections.forEach(function(section) {
+      if (section.offsetTop <= scrollY) {
+        current = section.id;
+      }
+    });
+    navLinks.forEach(function(link) {
+      link.classList.remove('active');
+      if (link.getAttribute('href') === '#' + current) {
+        link.classList.add('active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+
+</body>
+</html>
